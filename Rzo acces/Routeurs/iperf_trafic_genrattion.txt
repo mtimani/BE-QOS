@@ -1,0 +1,4 @@
+#Server Edge
+iperf3 -p 9001 -f MBytes -i 1 -s
+#Client Edge
+iperf3 -p 9001 -f MBytes -i 1 -V -c 192.168.0.3 -b 0 -t 20 -4 -S 4

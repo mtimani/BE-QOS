@@ -1,0 +1,4 @@
+sudo echo '/etc/udhcpd.conf' >> /opt/.filetool.lst
+sudo echo '/opt/eth0.sh' >> /opt/.filetool.lst
+sudo echo '/opt/eth0.sh &' >> /opt/bootlocal.sh
+filetool.sh -b
