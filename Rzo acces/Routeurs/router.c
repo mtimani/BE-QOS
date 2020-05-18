@@ -11,6 +11,8 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 
+#include <time.h>
+
 #include <pthread.h>
 
 #define ACK_SIZE 5
@@ -52,8 +54,14 @@ void *server_th(void *arg){
     return NULL;
 }
 
+typedef struct {
+    
+    BBrequest* bb_request
+} Reserv
+
 
 typedef struct {
+    int type;
     char* ipPhone1;
     int portPhone1;
     char* ipPhone2;
@@ -61,6 +69,15 @@ typedef struct {
     int bandwidth;
 } BBrequest;
 
+
+
+/**
+ *  Exemple de donnee
+ *  <type>,<source>,<destination>,<port_dst>,<debit>
+ *  type: 1 ou 0
+ *  destination/soruce : adresse ip : x.x.x.x
+ *  debit : en kilo-octet
+ * */
 BBrequest* parsing(char* msg, size_t msg_size){
     BBrequest* ptr_bbr = malloc(sizeof(BBrequest));
 
@@ -71,6 +88,7 @@ BBrequest* parsing(char* msg, size_t msg_size){
 
 void process_bb_request(BBrequest* bb_request){
     //process TODO
+    
 }
 
 
