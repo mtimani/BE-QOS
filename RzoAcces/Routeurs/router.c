@@ -55,11 +55,16 @@ void *server_th(void *arg){
     return NULL;
 }
 
+/**
+ * Struture representing a request from the Bandwidth Broker  
+ * */
 typedef struct {
     struct BBrequest* bb_request;
 } Reserv;
 
-
+/**
+ * Struture representing a request from the Bandwidth Broker
+ * */
 typedef struct {
     int type;
     char* ipPhone1;
