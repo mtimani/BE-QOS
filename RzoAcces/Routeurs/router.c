@@ -12,14 +12,13 @@
 #include <arpa/inet.h>
 
 #include <time.h>
+#include <string.h>
 
 #include <pthread.h>
 
 #define ACK_SIZE 5
 #define READ_MAX 100
 
-
-/* Definitions 
 int client_sock, server_sock, server_client_sock;
 struct sockaddr_in server_addr, client_server_addr;
 
@@ -57,19 +56,22 @@ void *server_th(void *arg){
 }
 
 typedef struct {
-    
-    BBrequest* bb_request
-} Reserv
+    struct BBrequest* bb_request;
+} Reserv;
 
 
 typedef struct {
     int type;
     char* ipPhone1;
-    int portPhone1;
     char* ipPhone2;
     int portPhone2;
     int bandwidth;
 } BBrequest;
+
+typedef struct {
+    struct BBrequest *bbrequest;
+    struct tm *req_time;
+} TableRequests;
 
 
 
@@ -91,40 +93,67 @@ BBrequest* parsing(char* msg, size_t msg_size){
     msg[msg_size-1] = '\0';
 
     //Type
-    token = strok(msg, ",");
+    token = strtok(msg, ",");
     if (token == NULL) return NULL;
-    ptr_bbrqst->type = atoi();
+    ptr_bbr->type = atoi(token);
     
     //@IP1
-    token = strok(msg, ",");
+    token = strtok(msg, ",");
     if(token == NULL) return NULL;
     ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
-    strcpy(ptr_bbrqst->ipPhone1, token);
+    strcpy(ptr_bbr->ipPhone1, token);
 
 
     //@IP2
-    token = strok(msg, ",");
+    token = strtok(msg, ",");
     if(token == NULL) return NULL;
     ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
-    strcpy(ptr_bbrqst->ipPhone1, token);
+    strcpy(ptr_bbr->ipPhone1, token);
 
     //Port dest 2
-    token = strok(msg, ",");
+    token = strtok(msg, ",");
     if(token == NULL) return NULL;
-    ptr_bbr->portPhone1 = atoi(token);
+    ptr_bbr->portPhone2 = atoi(token);
 
     //Bandwidth
-    token = strok(msg, ",");
+    token = strtok(msg, ",");
     if(token == NULL) return NULL;
-    ptr_bbr->portPhone1 = atoi(token);
+    ptr_bbr->bandwidth = atoi(token);
 
     return ptr_bbr; 
 }
 
+int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
+    if ((bb_request1->type == bb_request2->type) && (strcmp(bb_request1->ipPhone1,bb_request2->ipPhone1)) && (strcmp(bb_request1->ipPhone2,bb_request2->ipPhone2)) && (bb_request1->portPhone2 == bb_request2->portPhone2)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int compare_time_10_OK (time_t *req_time) {
+    
+    time_t t = time(NULL);
+    struct tm curr_tm = *localtime(&t);
+    struct tm req_tm = *localtime(req_time);
+
+    int cur_minutes = curr_tm.tm_year*525600 + curr_tm.tm_mon*43800 + curr_tm.tm_mday*1440 + curr_tm.tm_hour*60 + curr_tm.tm_min;
+    int req_minutes = req_tm.tm_year*525600 + req_tm.tm_mon*43800 + req_tm.tm_mday*1440 + req_tm.tm_hour*60 + req_tm.tm_min;
+
+    if ((cur_minutes - req_minutes) <= 10) {
+        return 1;
+    } else {
+        return 0;
+    }
+    
+}
 
 void process_bb_request(BBrequest* bb_request){
-    //process TODO
+    if (bb_request->type == 0) {
 
+    } else if (bb_request->type == 1) {
+
+    }
 }
 
 
@@ -170,6 +199,7 @@ int main(int argc, char **argv) {
     char msg[READ_MAX];
     BBrequest* ptr_bbrqst = NULL;
 
+
     while(1){
         if ((server_client_sock = accept(server_sock, (struct sockaddr *) ptr_server_client_addr, &received_msg_size)) == -1) {
             perror("Error server accept");
@@ -193,7 +223,5 @@ int main(int argc, char **argv) {
     pthread_create(&tid, NULL, server_th, (void *)argServe); 
 
     pthread_exit(NULL); */
-
-
 
 }
