@@ -97,35 +97,36 @@ TableRequests req_table[REQ_TABLE_LENGTH];
 BBrequest* parsing(char* msg, size_t msg_size){
     BBrequest* ptr_bbr = malloc(sizeof(BBrequest));
     char* token;
+    char delim[] = ";";
 
     //Guard
     msg[msg_size-1] = '\0';
 
     //Type
-    token = strtok(msg, ";");
+    token = strtok(msg, delim);
     if (token == NULL) return NULL;
     ptr_bbr->type = atoi(token);
     
     //@IP1
-    token = strtok(msg, ";");
+    token = strtok(msg, delim);
     if(token == NULL) return NULL;
     ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
     strcpy(ptr_bbr->ipPhone1, token);
 
 
     //@IP2
-    token = strtok(msg, ";");
+    token = strtok(msg, delim);
     if(token == NULL) return NULL;
     ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
     strcpy(ptr_bbr->ipPhone1, token);
 
     //Port dest 2
-    token = strtok(msg, ";");
+    token = strtok(msg, delim);
     if(token == NULL) return NULL;
     ptr_bbr->portPhone2 = atoi(token);
 
     //Bandwidth
-    token = strtok(msg, ";");
+    token = strtok(msg, delim);
     if(token == NULL) return NULL;
     ptr_bbr->bandwidth = atoi(token);
 
