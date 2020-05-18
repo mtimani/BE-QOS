@@ -19,6 +19,10 @@
 
 #include <event.h>
 
+#include<signal.h>
+
+
+
 #define ACK_SIZE 5
 #define READ_MAX 100
 
@@ -30,6 +34,25 @@ int client_server_port = 7001;
 char client_server_ipaddr[] = "192.168.0.1";
 /* Info for server */
 int server_port = 7002;
+
+
+
+/**
+ * Define for signal handling
+ * */
+
+/**
+ * Handling for the SIG INTERRUPTION
+*/
+void sigint_handler(int sig){
+    printf("Closing of sockets\n");
+    close(server_client_sock);
+    close(server_sock);
+
+    printf("Cleannin up of the tc commands \n");
+    //clear_all_tc();
+    exit(-1);
+}
 
 
 int sendMsg(char* msg, size_t msg_size){
@@ -91,7 +114,7 @@ TableRequests req_table[REQ_TABLE_LENGTH];
  *  Exemple de donnee
  *  <type>,<@IPsource>,<@IPdestination>,<port_dst>,<debit>
  *  type: 1 ou 0
- *  destination/soruce : adresse ip : x.x.x.x
+ *  destination/soruce : adresse ip : "x.x.x.x"
  *  debit : en kilo-octet
  * */
 BBrequest* parsing(char* msg, size_t msg_size){
@@ -231,6 +254,9 @@ void handler_bb_request(int fd, short event, void *arg) {
 
 
 int main(int argc, char **argv) {
+
+    signal(SIGINT, sigint_handler);
+
     struct event ev;
     struct timeval tv;
     tv.tv_sec = 3;
