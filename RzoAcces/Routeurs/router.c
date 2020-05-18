@@ -26,6 +26,7 @@
 #define ACK_SIZE 5
 #define READ_MAX 100
 
+#define ROUTER_BANDWITH 100
 
 int client_sock, server_sock, server_client_sock;
 struct sockaddr_in server_addr, client_server_addr;
@@ -157,13 +158,31 @@ BBrequest* parsing(char* msg, size_t msg_size){
     return ptr_bbr; 
 }
 
-void router_init_rules(){}
+#define DEFAULT_INTERFACE "eth1"
+#define PREMIUM_BW "80mbit"
+#define BEST_EFFORT_BW "10mbit"
 
-void router_add_rule(BBrequest *bb_request){}
+void router_init_rules(){
+    system(strcat(strcat("tc qdisc del dev ",DEFAULT_INTERFACE)," root"));
+    system(strcat(strcat("tc qdisc add dev ",DEFAULT_INTERFACE)," root handle 1: htb default 20"));
+    system(strcat(strcat(strcat(strcat(strcat("tc class add dev ",DEFAULT_INTERFACE)," parent 1: classid 1:1 htb rate "),PREMIUM_BW)," ceil "),PREMIUM_BW));
+    system(strcat(strcat(strcat(strcat(strcat("tc class add dev ",DEFAULT_INTERFACE)," parent 1: classid 1:2 htb rate "),BEST_EFFORT_BW)," ceil "),PREMIUM_BW));
+    system(strcat(strcat("tc filter add dev ",DEFAULT_INTERFACE)," parent 1:0 protocol ip prio 1 handle 20 fw flowid 1:2"));
+    system("iptables -A POSTROUTING -t mangle -j MARK --set-mark 20");
+}
 
-void router_del_rule(BBrequest *bb_request){}
+void router_add_rule(BBrequest *bb_request){
+    
+}
 
-void router_clear_rules(){}
+void router_del_rule(BBrequest *bb_request){
+
+}
+
+void router_clear_rules(){
+    system(strcat(strcat("tc qdisc del dev ",DEFAULT_INTERFACE)," root"));
+    system("iptables -t mangle -F");
+}
 
 int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
     if ((bb_request1 == NULL) || (bb_request2 == NULL)){
