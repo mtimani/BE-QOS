@@ -132,6 +132,14 @@ BBrequest* parsing(char* msg, size_t msg_size){
     return ptr_bbr; 
 }
 
+void router_init_rules(){}
+
+void router_add_rule(BBrequest *bb_request){}
+
+void router_del_rule(BBrequest *bb_request){}
+
+void router_clear_rules(){}
+
 int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
     if ((bb_request1 == NULL) || (bb_request2 == NULL)){
         return 0;
