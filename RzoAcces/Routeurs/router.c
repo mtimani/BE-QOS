@@ -37,26 +37,6 @@ char client_server_ipaddr[] = "192.168.0.1";
 /* Info for server */
 int server_port = 7002;
 
-
-
-/**
- * Define for signal handling
- * */
-
-/**
- * Handling for the SIG INTERRUPTION
-*/
-void sigint_handler(int sig){
-    printf("Closing of sockets\n");
-    close(server_client_sock);
-    close(server_sock);
-
-    printf("Cleannin up of the tc commands \n");
-    router_clear_rules();
-    exit(-1);
-}
-
-
 int sendMsg(char* msg, size_t msg_size){
     return write(server_client_sock, msg, msg_size);
 }
@@ -168,7 +148,9 @@ void router_init_rules(){
     system(strcat(strcat(strcat(strcat(strcat("tc class add dev ",DEFAULT_INTERFACE)," parent 1: classid 1:1 htb rate "),PREMIUM_BW)," ceil "),PREMIUM_BW));
     system(strcat(strcat(strcat(strcat(strcat("tc class add dev ",DEFAULT_INTERFACE)," parent 1: classid 1:2 htb rate "),BEST_EFFORT_BW)," ceil "),PREMIUM_BW));
     system(strcat(strcat("tc filter add dev ",DEFAULT_INTERFACE)," parent 1:0 protocol ip prio 1 handle 20 fw flowid 1:2"));
+    system(strcat(strcat("tc filter add dev ",DEFAULT_INTERFACE)," parent 1:0 protocol ip prio 1 handle 1 fw flowid 1:1"));
     system("iptables -A POSTROUTING -t mangle -j MARK --set-mark 20");
+    system("iptables -A PREROUTING -t mangle -s 192.168.0.1 -j MARK --set-mark 1");
 }
 
 void router_add_rule(BBrequest *bb_request){
@@ -182,6 +164,23 @@ void router_del_rule(BBrequest *bb_request){
 void router_clear_rules(){
     system(strcat(strcat("tc qdisc del dev ",DEFAULT_INTERFACE)," root"));
     system("iptables -t mangle -F");
+}
+
+/**
+ * Define for signal handling
+ * */
+
+/**
+ * Handling for the SIG INTERRUPTION
+*/
+void sigint_handler(int sig){
+    printf("Closing of sockets\n");
+    close(server_client_sock);
+    close(server_sock);
+
+    printf("Cleannin up of the tc commands \n");
+    router_clear_rules();
+    exit(-1);
 }
 
 int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
