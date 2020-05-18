@@ -69,11 +69,12 @@ typedef struct {
 } BBrequest;
 
 typedef struct {
-    struct BBrequest *bbrequest;
+    BBrequest *bbrequest;
     struct tm *req_time;
 } TableRequests;
 
-
+#define REQ_TABLE_LENGTH 100
+TableRequests req_table[REQ_TABLE_LENGTH];
 
 /**
  *  Parse a string containning the request of the BB.
@@ -93,30 +94,30 @@ BBrequest* parsing(char* msg, size_t msg_size){
     msg[msg_size-1] = '\0';
 
     //Type
-    token = strtok(msg, ",");
+    token = strtok(msg, ";");
     if (token == NULL) return NULL;
     ptr_bbr->type = atoi(token);
     
     //@IP1
-    token = strtok(msg, ",");
+    token = strtok(msg, ";");
     if(token == NULL) return NULL;
     ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
     strcpy(ptr_bbr->ipPhone1, token);
 
 
     //@IP2
-    token = strtok(msg, ",");
+    token = strtok(msg, ";");
     if(token == NULL) return NULL;
     ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
     strcpy(ptr_bbr->ipPhone1, token);
 
     //Port dest 2
-    token = strtok(msg, ",");
+    token = strtok(msg, ";");
     if(token == NULL) return NULL;
     ptr_bbr->portPhone2 = atoi(token);
 
     //Bandwidth
-    token = strtok(msg, ",");
+    token = strtok(msg, ";");
     if(token == NULL) return NULL;
     ptr_bbr->bandwidth = atoi(token);
 
@@ -124,6 +125,9 @@ BBrequest* parsing(char* msg, size_t msg_size){
 }
 
 int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
+    if ((bb_request1 == NULL) || (bb_request2 == NULL)){
+        return 0;
+    }
     if ((bb_request1->type == bb_request2->type) && (strcmp(bb_request1->ipPhone1,bb_request2->ipPhone1)) && (strcmp(bb_request1->ipPhone2,bb_request2->ipPhone2)) && (bb_request1->portPhone2 == bb_request2->portPhone2)) {
         return 1;
     } else {
@@ -132,7 +136,6 @@ int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
 }
 
 int compare_time_10_OK (time_t *req_time) {
-    
     time_t t = time(NULL);
     struct tm curr_tm = *localtime(&t);
     struct tm req_tm = *localtime(req_time);
@@ -145,14 +148,59 @@ int compare_time_10_OK (time_t *req_time) {
     } else {
         return 0;
     }
-    
 }
+
+void copy_bb_request(BBrequest *dest, BBrequest *source) {
+
+}
+
 
 void process_bb_request(BBrequest* bb_request){
     if (bb_request->type == 0) {
 
-    } else if (bb_request->type == 1) {
+        int present = 0;
+        for (int i=0;i<REQ_TABLE_LENGTH;i++) {
+            if (compare_request(req_table[i].bbrequest,bb_request)) {
+                time_t t = time(NULL);
+                struct tm * curr_tm = malloc(sizeof(struct tm));
+                *curr_tm = *localtime(&t);
+                free(req_table[i].req_time);
+                req_table[i].req_time = curr_tm;
+                present = 1;
+            }
+        }
 
+        if (!present) {
+            int j = 0;
+            while((req_table[j].bbrequest!=NULL) && (j<REQ_TABLE_LENGTH)){
+                j++;
+            }
+            if (j<REQ_TABLE_LENGTH) {
+                req_table[j].bbrequest = malloc(sizeof(BBrequest));
+                req_table[j].req_time = malloc(sizeof(struct tm));
+                copy_bb_request(req_table[j].bbrequest, bb_request);
+                time_t t = time(NULL);
+                struct tm * curr_tm = malloc(sizeof(struct tm));
+                *curr_tm = *localtime(&t);
+                req_table[j].req_time = curr_tm;
+
+                //Appels système
+
+            }
+        }
+
+    } else if (bb_request->type == 1) {
+        for (int i=0;i<REQ_TABLE_LENGTH;i++) {
+             if (compare_request(req_table[i].bbrequest,bb_request)) {
+                 //Appels système
+
+
+                 free(req_table[i].bbrequest);
+                 free(req_table[i].req_time);
+                 req_table[i].bbrequest = NULL;
+                 req_table[i].req_time = NULL;
+             }
+        }
     }
 }
 
@@ -198,7 +246,6 @@ int main(int argc, char **argv) {
     size_t receiv_msg_size = 0;
     char msg[READ_MAX];
     BBrequest* ptr_bbrqst = NULL;
-
 
     while(1){
         if ((server_client_sock = accept(server_sock, (struct sockaddr *) ptr_server_client_addr, &received_msg_size)) == -1) {
