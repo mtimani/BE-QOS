@@ -26,6 +26,7 @@
 #define ACK_SIZE 5
 #define READ_MAX 100
 
+
 int client_sock, server_sock, server_client_sock;
 struct sockaddr_in server_addr, client_server_addr;
 
@@ -50,7 +51,7 @@ void sigint_handler(int sig){
     close(server_sock);
 
     printf("Cleannin up of the tc commands \n");
-    //clear_all_tc();
+    router_clear_rules();
     exit(-1);
 }
 
