@@ -11,10 +11,13 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 
+#include <sys/time.h>
 #include <time.h>
 #include <string.h>
 
 #include <pthread.h>
+
+#include <event.h>
 
 #define ACK_SIZE 5
 #define READ_MAX 100
@@ -135,13 +138,12 @@ int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
     }
 }
 
-int compare_time_10_OK (time_t *req_time) {
+int compare_time_10_OK (struct tm *req_tm) {
     time_t t = time(NULL);
     struct tm curr_tm = *localtime(&t);
-    struct tm req_tm = *localtime(req_time);
 
     int cur_minutes = curr_tm.tm_year*525600 + curr_tm.tm_mon*43800 + curr_tm.tm_mday*1440 + curr_tm.tm_hour*60 + curr_tm.tm_min;
-    int req_minutes = req_tm.tm_year*525600 + req_tm.tm_mon*43800 + req_tm.tm_mday*1440 + req_tm.tm_hour*60 + req_tm.tm_min;
+    int req_minutes = req_tm->tm_year*525600 + req_tm->tm_mon*43800 + req_tm->tm_mday*1440 + req_tm->tm_hour*60 + req_tm->tm_min;
 
     if ((cur_minutes - req_minutes) <= 10) {
         return 1;
@@ -151,7 +153,11 @@ int compare_time_10_OK (time_t *req_time) {
 }
 
 void copy_bb_request(BBrequest *dest, BBrequest *source) {
-
+    dest->type = source->type;
+    strcpy(dest->ipPhone1,source->ipPhone1);
+    strcpy(dest->ipPhone2,source->ipPhone2);
+    dest->portPhone2 = source->portPhone2;
+    dest->bandwidth = source->bandwidth;
 }
 
 
@@ -194,7 +200,6 @@ void process_bb_request(BBrequest* bb_request){
              if (compare_request(req_table[i].bbrequest,bb_request)) {
                  //Appels système
 
-
                  free(req_table[i].bbrequest);
                  free(req_table[i].req_time);
                  req_table[i].bbrequest = NULL;
@@ -204,8 +209,27 @@ void process_bb_request(BBrequest* bb_request){
     }
 }
 
+void handler_bb_request(int fd, short event, void *arg) {
+    for (int i=0;i<REQ_TABLE_LENGTH;i++) {
+        if (req_table[i].bbrequest!=NULL) {
+            if (compare_time_10_OK(req_table[i].req_time)) {
+                //Appels système
+                free(req_table[i].bbrequest);
+                free(req_table[i].req_time);
+                req_table[i].bbrequest = NULL;
+                req_table[i].req_time = NULL;
+            }
+        }
+    }
+}
+
 
 int main(int argc, char **argv) {
+    struct event ev;
+    struct timeval tv;
+    tv.tv_sec = 3;
+    tv.tv_usec = 0;
+
     /* client */
     memset(&client_server_addr, 0, sizeof(client_server_addr));
 
@@ -246,6 +270,11 @@ int main(int argc, char **argv) {
     size_t receiv_msg_size = 0;
     char msg[READ_MAX];
     BBrequest* ptr_bbrqst = NULL;
+
+    event_init();
+    evtimer_set(&ev, handler_bb_request, NULL);
+    evtimer_add(&ev, &tv);
+    event_dispatch();
 
     while(1){
         if ((server_client_sock = accept(server_sock, (struct sockaddr *) ptr_server_client_addr, &received_msg_size)) == -1) {
