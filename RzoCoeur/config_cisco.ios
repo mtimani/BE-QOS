@@ -1,0 +1,185 @@
+R1 :
+
+interface fastEthernet 0/0
+ip address 10.10.12.1 255.255.255.0
+no shut
+
+interface loopback 0
+ip address 1.1.1.1 255.255.255.255
+
+router ospf 1
+network 10.10.12.0 0.0.0.255 area 0
+redistribute connected subnets
+
+ip cef
+mpls label protocol ldp
+mpls ldp router-id loopback 0
+
+interface fastEthernet 0/0
+mpls ip
+
+ip vrf CA
+rd 100:1
+route target both 100:1
+
+interface fastEthernet 0/1
+ip vrf forwarding CA
+ip address 192.168.10.254 255.255.255.0
+
+router rip
+version 2
+address-family ipv4 vrf CA
+version 2
+redistribute bgp 100 metric 1
+network 192.168.10.0
+no auto-summary
+
+router bgp 100
+neighbor 4.4.4.4 remote-as 100
+neighbor 4.4.4.4 update-source loopback 0
+address-family ipv4 vrf CA
+redistribute connected
+redistribute rip
+no auto-summary 
+neighbor 192.168.0.0 remote-as 69 
+neighbor 201.201.201.2 activate
+exit
+address-family vpnv4 
+neighbor 4.4.4.4 activate 
+neighbor 4.4.4.4 send-community both
+
+ip classless
+ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.155 global
+
+R2 :
+
+interface fastEthernet 0/0
+ip address 10.10.12.2 255.255.255.0
+no shut
+interface fastEthernet 0/1
+ip address 10.10.23.2 255.255.255.0
+no shut
+
+interface loopback 0
+ip address 2.2.2.2 255.255.255.255
+
+router ospf 1
+network 10.10.12.0 0.0.0.255 area 0
+network 10.10.23.0 0.0.0.255 area 0
+redistribute connected subnets
+
+ip cef
+mpls label protocol ldp
+mpls ldp router-id loopback 0
+
+interface fastEthernet 0/0
+mpls ip
+
+interface fastEthernet 0/1
+mpls ip
+
+
+R3 :
+
+interface fastEthernet 0/1
+ip address 10.10.23.3 255.255.255.0
+no shut
+interface fastEthernet 0/0
+ip address 10.10.34.3 255.255.255.0
+no shut
+
+interface loopback 0
+ip address 3.3.3.3 255.255.255.255
+
+router ospf 1
+network 10.10.23.0 0.0.0.255 area 0
+network 10.10.34.0 0.0.0.255 area 0
+redistribute connected subnets
+
+ip cef
+mpls label protocol ldp
+mpls ldp router-id loopback 0
+
+interface fastEthernet 0/0
+mpls ip
+
+interface fastEthernet 0/1
+mpls ip
+
+
+R4 :
+
+interface fastEthernet 0/0
+ip address 10.10.34.4 255.255.255.0
+no shut
+
+interface loopback 0
+ip address 4.4.4.4 255.255.255.255
+
+router ospf 1
+network 10.10.34.0 0.0.0.255 area 0
+redistribute connected subnets
+
+ip cef
+mpls label protocol ldp
+mpls ldp router-id loopback 0
+
+interface fastEthernet 0/0
+mpls ip
+
+ip vrf CA
+rd 100:1
+route target both 100:1
+
+interface fastEthernet 0/1
+ip vrf forwarding CA
+ip address 192.168.10.254 255.255.255.0
+
+router rip
+version 2
+address-family ipv4 vrf CA
+version 2
+redistribute bgp 100 metric 1
+network 192.168.20.0
+no auto-summary
+
+router bgp 100
+neighbor 1.1.1.1 remote-as 100
+neighbor 1.1.1.1 update-source loopback 0
+address-family ipv4 vrf CA
+redistribute connected
+redistribute rip
+no auto-summary
+exit
+address-family vpnv4 
+neighbor 1.1.1.1 activate 
+neighbor 1.1.1.1 send-community both
+
+R5 :
+
+interface fastEthernet 0/1
+ip address 10.10.23.5 255.255.255.0
+ip nat inside
+no shut
+
+interface loopback 0
+ip address 5.5.5.5 255.255.255.255
+
+router ospf 1
+network 10.10.23.0 0.0.0.255 area 0
+redistribute connected subnets
+
+ip cef
+mpls label protocol ldp
+mpls ldp router-id loopback 0
+
+interface fastEthernet 0/1
+mpls ip
+
+interface fastEthernet 0/0
+ip address dhcp
+ip nat outside
+no shut
+
+access-list 1 permit 192.168.0.0 0.0.255.255
+ip nat inside source list 1 interface fastEthernet 0/0 overload
