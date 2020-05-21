@@ -63,12 +63,6 @@ void *server_th(void *arg){
     return NULL;
 }
 
-/**
- * Struture representing a request from the Bandwidth Broker  
- * */
-typedef struct {
-    struct BBrequest* bb_request;
-} Reserv;
 
 /**
  * Struture representing a request from the Bandwidth Broker
@@ -96,7 +90,7 @@ TableRequests req_table[REQ_TABLE_LENGTH];
  *  Exemple de donnee
  *  <type>,<@IPsource>,<@IPdestination>,<port_dst>,<debit>
  *  type: 1 ou 0
- *  destination/soruce : adresse ip : "x.x.x.x"
+ *  destination/source : adresse ip : "x.x.x.x"
  *  debit : en kilo-octet
  * */
 BBrequest* parsing(char* msg, size_t msg_size){
@@ -143,13 +137,24 @@ BBrequest* parsing(char* msg, size_t msg_size){
 #define BEST_EFFORT_BW "10mbit"
 
 void router_init_rules(){
+    //Delete the queuing discipline in case it already exist
     system(strcat(strcat("tc qdisc del dev ",DEFAULT_INTERFACE)," root"));
+
+    //Create a new queueing discipline
     system(strcat(strcat("tc qdisc add dev ",DEFAULT_INTERFACE)," root handle 1: htb default 20"));
+
+    //Adding of the two main queue for premium class and best effort class
     system(strcat(strcat(strcat(strcat(strcat("tc class add dev ",DEFAULT_INTERFACE)," parent 1: classid 1:1 htb rate "),PREMIUM_BW)," ceil "),PREMIUM_BW));
     system(strcat(strcat(strcat(strcat(strcat("tc class add dev ",DEFAULT_INTERFACE)," parent 1: classid 1:2 htb rate "),BEST_EFFORT_BW)," ceil "),PREMIUM_BW));
+
+    //Definition of the type of flow that has to be handled by either best effort queue (classid=1:2 and marking 20) or  premium queue (classid=1:1 and marking 1)
     system(strcat(strcat("tc filter add dev ",DEFAULT_INTERFACE)," parent 1:0 protocol ip prio 1 handle 20 fw flowid 1:2"));
     system(strcat(strcat("tc filter add dev ",DEFAULT_INTERFACE)," parent 1:0 protocol ip prio 1 handle 1 fw flowid 1:1"));
+
+    //By default the all flow has to be handle by the best effort queue (marking 20)
     system("iptables -A POSTROUTING -t mangle -j MARK --set-mark 20");
+
+    //The flow from the Bandwidth Broker (whose IP@ is 192.168.0.1) has to be handle by the premium queue (marking 1)
     system("iptables -A PREROUTING -t mangle -s 192.168.0.1 -j MARK --set-mark 1");
 }
 
