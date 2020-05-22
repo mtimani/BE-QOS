@@ -37,19 +37,21 @@ no auto-summary
 router bgp 100
 neighbor 4.4.4.4 remote-as 100
 neighbor 4.4.4.4 update-source loopback 0
+neighbor 5.5.5.5 remote-as 100 
+neighbor 5.5.5.5 update-source loopback 0
 address-family ipv4 vrf CA
 redistribute connected
 redistribute rip
 no auto-summary 
-neighbor 192.168.0.0 remote-as 69 
-neighbor 201.201.201.2 activate
 exit
 address-family vpnv4 
 neighbor 4.4.4.4 activate 
 neighbor 4.4.4.4 send-community both
+neighbor 5.5.5.5 activate 
+neighbor 5.5.5.5 send-community both
 
 ip classless
-ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.155 global
+ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 global
 
 R2 :
 
@@ -146,6 +148,8 @@ no auto-summary
 router bgp 100
 neighbor 1.1.1.1 remote-as 100
 neighbor 1.1.1.1 update-source loopback 0
+neighbor 5.5.5.5 remote-as 100
+neighbor 5.5.5.5 update-source loopback 0
 address-family ipv4 vrf CA
 redistribute connected
 redistribute rip
@@ -154,6 +158,11 @@ exit
 address-family vpnv4 
 neighbor 1.1.1.1 activate 
 neighbor 1.1.1.1 send-community both
+neighbor 5.5.5.5 activate 
+neighbor 5.5.5.5 send-community both
+
+ip classless
+ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 global
 
 R5 :
 
@@ -176,10 +185,39 @@ mpls ldp router-id loopback 0
 interface fastEthernet 0/1
 mpls ip
 
+ip vrf CA
+rd 100:1
+routetarget both 100:1
+
 interface fastEthernet 0/0
+no shut
+ip vrf forwarding CA
 ip address dhcp
 ip nat outside
-no shut
+
+router rip
+version 2
+address-family ipv4 vrf CA
+version 2
+redistribute bgp 100 metric 1
+network 192.168.122.0 
+no auto-summary
+
+router bgp 100
+neighbor 4.4.4.4 remote-as 100
+neighbor 4.4.4.4 update-source loopback 0
+neighbor 1.1.1.1 remote-as 100 
+neighbor 1.1.1.1 update-source loopback 0
+address-family ipv4 vrf CA
+redistribute connected
+redistribute rip
+no auto-summary 
+exit
+address-family vpnv4 
+neighbor 4.4.4.4 activate 
+neighbor 4.4.4.4 send-community both
+neighbor 1.1.1.1 activate 
+neighbor 1.1.1.1 send-community both
 
 access-list 1 permit 192.168.0.0 0.0.255.255
-ip nat inside source list 1 interface fastEthernet 0/0 overload
+ip nat inside source list 1 interface fastEthernet 0/0 vrf CA overload
