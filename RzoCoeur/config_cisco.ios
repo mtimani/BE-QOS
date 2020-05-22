@@ -53,6 +53,68 @@ neighbor 5.5.5.5 send-community both
 ip classless
 ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 global
 
+##QOS
+
+#EXP Field
+(DSCP CORRESPONDANCE : (TR : ef or 46 or 0xb8), (DT : AF21 or 18 or 0x48), (BK : CS1 or 8 or 0x20))
+class-map match-all MPLS-TR
+match mpls experimental topmost 5
+class-map match-all MPLS-DT 
+match mpls experimental topmost 2
+class-map match-all MPLS-BK 
+match mpls experimental topmost 1
+
+#PHB
+policy-map MPLS-PHB
+class MPLS-TR
+priority percent 30
+class MPLS-DT
+bandwith percent 40
+class MPLS-BK
+bandwith percent 5
+class class-default
+bandwith percent 25 
+
+interface fastEthernet 0/0
+service-policy output MPLS-PHB
+
+#Uniform Tunneling Mode
+policy-map Set-QoS-Group
+class MPLS-TR
+set qos-group 5
+class MPLS-DT
+set qos-group 2
+class MPLS-BK
+set qos-group 1
+exit
+exit
+
+interface fastEthernet 0/0
+service-policy input Set-QoS-Group
+exit
+
+class-map match-all TR
+match qos-group 5
+class-map match-all DT
+match qos-group 2
+class-map match-all BK
+match qos-group 1
+exit
+
+policy-map Set-IP-Prec
+class TR
+set ip precedence 5
+class DT
+set ip precedence 2
+class BK
+set ip precedence 1
+exit
+exit
+
+interface fastEthernet 0/1
+service-policy output Set-IP-Prec
+exit
+
 R2 :
 
 interface fastEthernet 0/0
@@ -79,6 +141,33 @@ mpls ip
 
 interface fastEthernet 0/1
 mpls ip
+
+##QOS
+
+#EXP Field
+(DSCP CORRESPONDANCE : (TR : ef or 46), (DT : AF21 or 18), (BK : CS1 or 8))
+class-map match-all MPLS-TR
+match mpls experimental topmost 5
+class-map match-all MPLS-DT 
+match mpls experimental topmost 2
+class-map match-all MPLS-BK 
+match mpls experimental topmost 1
+
+#PHB
+policy-map MPLS-PHB
+class MPLS-TR
+priority percent 30
+class MPLS-DT
+bandwith percent 40
+class MPLS-BK
+bandwith percent 5
+class class-default
+bandwith percent 25 
+
+interface fastEthernet 0/0
+service-policy output MPLS-PHB
+interface fastEthernet 0/1
+service-policy output MPLS-PHB
 
 
 R3 :
@@ -107,6 +196,33 @@ mpls ip
 
 interface fastEthernet 0/1
 mpls ip
+
+##QOS
+
+#EXP Field
+(DSCP CORRESPONDANCE : (TR : ef or 46), (DT : AF21 or 18), (BK : CS1 or 8))
+class-map match-all MPLS-TR
+match mpls experimental topmost 5
+class-map match-all MPLS-DT 
+match mpls experimental topmost 2
+class-map match-all MPLS-BK 
+match mpls experimental topmost 1
+
+#PHB
+policy-map MPLS-PHB
+class MPLS-TR
+priority percent 30
+class MPLS-DT
+bandwith percent 40
+class MPLS-BK
+bandwith percent 5
+class class-default
+bandwith percent 25 
+
+interface fastEthernet 0/0
+service-policy output MPLS-PHB
+interface fastEthernet 0/1
+service-policy output MPLS-PHB
 
 
 R4 :
@@ -163,6 +279,68 @@ neighbor 5.5.5.5 send-community both
 
 ip classless
 ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 global
+
+##QOS
+
+#EXP Field
+class-map match-all MPLS-TR
+match mpls experimental topmost 5
+class-map match-all MPLS-DT 
+match mpls experimental topmost 2
+class-map match-all MPLS-BK 
+match mpls experimental topmost 1
+
+#PHB
+policy-map MPLS-PHB
+class MPLS-TR
+priority percent 30
+class MPLS-DT
+bandwith percent 40
+class MPLS-BK
+bandwith percent 5
+class class-default
+bandwith percent 25 
+
+interface fastEthernet 0/0
+service-policy output MPLS-PHB
+
+#Uniform Tunneling Mode
+policy-map Set-QoS-Group
+class MPLS-TR
+set qos-group 5
+class MPLS-DT
+set qos-group 2
+class MPLS-BK
+set qos-group 1
+exit
+exit
+
+interface fastEthernet 0/0
+service-policy input Set-QoS-Group
+exit
+
+class-map match-all TR
+match qos-group 5
+class-map match-all DT
+match qos-group 2
+class-map match-all BK
+match qos-group 1
+exit
+
+policy-map Set-IP-Prec
+class TR
+set ip precedence 5
+class DT
+set ip precedence 2
+class BK
+set ip precedence 1
+exit
+exit
+
+interface fastEthernet 0/1
+service-policy output Set-IP-Prec
+exit
+
 
 R5 :
 
@@ -221,3 +399,34 @@ neighbor 1.1.1.1 send-community both
 
 access-list 1 permit 192.168.0.0 0.0.255.255
 ip nat inside source list 1 interface fastEthernet 0/0 vrf CA overload
+
+##QOS
+
+#EXP Field
+(DSCP CORRESPONDANCE : (TR : ef or 46), (DT : AF21 or 18), (BK : CS1 or 8))
+class-map match-all MPLS-TR
+match mpls experimental topmost 5
+class-map match-all MPLS-DT 
+match mpls experimental topmost 2
+class-map match-all MPLS-BK 
+match mpls experimental topmost 1
+
+#PHB
+policy-map MPLS-PHB
+class MPLS-TR
+priority percent 30
+class MPLS-DT
+bandwith percent 40
+class MPLS-BK
+bandwith percent 5
+class class-default
+bandwith percent 25 
+
+interface fastEthernet 0/1
+service-policy output MPLS-PHB
+
+
+Problems : 
+- No default route on VRF PE side
+- No bandwith for class-default in PHB
+- No policer
