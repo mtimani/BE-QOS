@@ -1,3 +1,3 @@
 #!/bin/sh
 
-gcc -Wall router.c -levent -o router
+gcc -Wall -g router.c -levent -o router
