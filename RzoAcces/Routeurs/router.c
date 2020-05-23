@@ -403,21 +403,21 @@ int main(int argc, char **argv) {
             perror("server read error");
             //exit(EXIT_FAILURE);
         }
-        
-        printf("New request: %s\n", msg);
-        printf("Parsing...\n");
-        ptr_bbrqst = parsing(msg, receiv_msg_size);
+        else{
+            printf("New request: %s\n", msg);
+            printf("Parsing...\n");
+            ptr_bbrqst = parsing(msg, receiv_msg_size);
 
-        if(ptr_bbrqst != NULL){
-            printf("Parsing OK\n");
-            print_bbrequest(ptr_bbrqst);
-            //process_bb_request(ptr_bbrqst);
-            free(ptr_bbrqst);
-        }else{
-            printf("Error when parsing of the request\n");
+            if(ptr_bbrqst != NULL){
+                printf("Parsing OK\n");
+                print_bbrequest(ptr_bbrqst);
+                //process_bb_request(ptr_bbrqst);
+                free(ptr_bbrqst);
+            }else{
+                printf("Error when parsing of the request\n");
+            }
         }
 
-        
     }
 
     /*pthread_t tid;
