@@ -21,6 +21,12 @@
 
 #include<signal.h>
 
+/** Functions definitions **/
+#define CONCAT_BUF_SIZE 500
+char concat_buf[CONCAT_BUF_SIZE]; //Int to String buffer
+char* concat(const char* str1, const char* str2);
+char* concat3(const char* str1, const char* str2, const char* str3);
+
 
 
 #define ACK_SIZE 5
@@ -28,14 +34,59 @@
 
 #define ROUTER_BANDWITH 100
 
+
 int client_sock, server_sock, server_client_sock;
 struct sockaddr_in server_addr, client_server_addr;
 
 /* Info for client */
-int client_server_port = 7001;
+int client_server_port = 7002; // The port on which the client will respond 
 char client_server_ipaddr[] = "192.168.0.1";
+
+void init_client(){
+    memset(&client_server_addr, 0, sizeof(client_server_addr));
+
+    if ((client_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		perror("client socket creation failed");
+    }
+    client_server_addr.sin_family = AF_INET;
+    client_server_addr.sin_port = client_server_port;
+    inet_aton(client_server_ipaddr, &client_server_addr.sin_addr);
+}
+
+
 /* Info for server */
-int server_port = 7002;
+int server_port;
+struct sockaddr_in *ptr_server_client_addr;
+void init_server(int port){
+
+    server_port = port;
+    ptr_server_client_addr = malloc(sizeof(struct sockaddr_in));
+    
+    memset(&server_addr, 0, sizeof(server_addr));
+	memset(ptr_server_client_addr, 0, sizeof(server_addr));
+
+    if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		perror("Error server socket ");
+        exit(EXIT_FAILURE);
+	}
+
+    server_addr.sin_family = AF_INET;
+	server_addr.sin_port = server_port;
+	server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(server_sock, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in)) == -1)
+    {
+        perror("error server bind ");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_sock, 50) == -1)
+    {
+        perror("Error listen ");
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 int sendMsg(char* msg, size_t msg_size){
     return write(server_client_sock, msg, msg_size);
@@ -72,7 +123,7 @@ typedef struct {
     char* ipPhone1;
     char* ipPhone2;
     int portPhone2;
-    int bandwidth;
+    unsigned long long bandwidth;
 } BBrequest;
 
 typedef struct {
@@ -86,7 +137,8 @@ TableRequests req_table[REQ_TABLE_LENGTH];
 /**
  *  Parse a string containning the request of the BB.
  *  @return: NULL if the parsing failed, a filled BBrequest structure else
- *  @comment: 
+ *  @comment: The BBrequest strucutre is malloc then need to be freed
+ *
  *  Exemple de donnee
  *  <type>,<@IPsource>,<@IPdestination>,<port_dst>,<debit>
  *  type: 1 ou 0
@@ -99,7 +151,7 @@ BBrequest* parsing(char* msg, size_t msg_size){
     char delim[] = ";";
 
     //Guard
-    msg[msg_size-1] = '\0';
+    msg[msg_size] = '\0';
 
     //Type
     token = strtok(msg, delim);
@@ -107,34 +159,47 @@ BBrequest* parsing(char* msg, size_t msg_size){
     ptr_bbr->type = atoi(token);
     
     //@IP1
-    token = strtok(msg, delim);
+    token = strtok(NULL, delim);
     if(token == NULL) return NULL;
-    ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
+    ptr_bbr->ipPhone1 = malloc((1+strlen(token))*sizeof(char));
     strcpy(ptr_bbr->ipPhone1, token);
 
 
     //@IP2
-    token = strtok(msg, delim);
+    token = strtok(NULL, delim);
     if(token == NULL) return NULL;
-    ptr_bbr->ipPhone1 = malloc(strlen(token)*sizeof(char));
-    strcpy(ptr_bbr->ipPhone1, token);
+    ptr_bbr->ipPhone2 = malloc((1+strlen(token))*sizeof(char));
+    strcpy(ptr_bbr->ipPhone2, token);
 
     //Port dest 2
-    token = strtok(msg, delim);
+    token = strtok(NULL, delim);
     if(token == NULL) return NULL;
     ptr_bbr->portPhone2 = atoi(token);
 
     //Bandwidth
-    token = strtok(msg, delim);
+    token = strtok(NULL, delim);
     if(token == NULL) return NULL;
     ptr_bbr->bandwidth = atoi(token);
 
     return ptr_bbr; 
 }
 
+void print_bbrequest(BBrequest* bbreq){
+    printf("BB request\n");
+    printf("Type: %d\n", bbreq->type);
+    printf("@IPsrc: %s\n", bbreq->ipPhone1);
+    printf("@IPdst: %s\n", bbreq->ipPhone2);
+    printf("@Port_dst: %d\n", bbreq->portPhone2);
+    printf("BW: %lld\n", bbreq->bandwidth);
+}
+
+
+
 #define DEFAULT_INTERFACE "eth1"
 #define PREMIUM_BW "80mbit"
 #define BEST_EFFORT_BW "10mbit"
+
+
 
 void router_init_rules(){
     //Delete the queuing discipline in case it already exist
@@ -167,7 +232,8 @@ void router_del_rule(BBrequest *bb_request){
 }
 
 void router_clear_rules(){
-    system(strcat(strcat("tc qdisc del dev ",DEFAULT_INTERFACE)," root"));
+    printf("Command: %s \n", concat3("tc qdisc del dev ",DEFAULT_INTERFACE," root"));
+    system(concat3("tc qdisc del dev ",DEFAULT_INTERFACE," root"));
     system("iptables -t mangle -F");
 }
 
@@ -176,16 +242,19 @@ void router_clear_rules(){
  * */
 
 /**
- * Handling for the SIG INTERRUPTION
+ * Handling for the SIG INTERRUPTION (SIGINT)
 */
 void sigint_handler(int sig){
-    printf("Closing of sockets\n");
+    printf("\nClosing of sockets\n");
+    shutdown(server_client_sock, SHUT_RDWR);
     close(server_client_sock);
+    shutdown(server_sock, SHUT_RDWR);
     close(server_sock);
 
-    printf("Cleannin up of the tc commands \n");
-    router_clear_rules();
-    exit(-1);
+    //printf("Cleanning up of the tc commands \n");
+    //router_clear_rules();
+    //printf("Rules cleanned up ! \n");
+    exit(0);
 }
 
 int compare_request(BBrequest *bb_request1,BBrequest *bb_request2) {
@@ -286,7 +355,14 @@ void handler_bb_request(int fd, short event, void *arg) {
 
 
 int main(int argc, char **argv) {
+    if(argc < 2){
+        printf("router <port>\n");
+        exit(EXIT_FAILURE);
+    }
 
+
+
+    printf("Intialization of components...\n");
     signal(SIGINT, sigint_handler);
 
     struct event ev;
@@ -294,41 +370,16 @@ int main(int argc, char **argv) {
     tv.tv_sec = 3;
     tv.tv_usec = 0;
 
-    /* client */
-    memset(&client_server_addr, 0, sizeof(client_server_addr));
+    // client 
+    /*
+    init_client();
 
-    if ((client_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		perror("client socket creation failed");
-    }
-    client_server_addr.sin_family = AF_INET;
-    client_server_addr.sin_port = client_server_port;
-    inet_aton(client_server_ipaddr, &client_server_addr.sin_addr);
     if (connect(client_sock, (struct sockaddr *) &client_server_addr, sizeof(client_server_addr)) == -1)
         perror("Error client connect");
+    */
 
-    /* Server */
-    struct sockaddr_in *ptr_server_client_addr = malloc(sizeof(struct sockaddr_in));
-    
-    memset(&server_addr, 0, sizeof(server_addr));
-	memset(ptr_server_client_addr, 0, sizeof(server_addr));
-
-    if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		perror("Error server socket ");
-	}
-
-    server_addr.sin_family = AF_INET;
-	server_addr.sin_port = server_port;
-	server_addr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(server_sock, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in)) == -1)
-    {
-        perror("error server bind ");
-    }
-
-    if (listen(server_sock, 50) == -1)
-    {
-        perror("Error listen ");
-    }
+    // Server 
+    init_server(atoi(argv[1]));
 
     unsigned int received_msg_size;
     size_t receiv_msg_size = 0;
@@ -341,21 +392,32 @@ int main(int argc, char **argv) {
     event_dispatch();
 
     while(1){
+        printf("Waiting of new request...\n");
         if ((server_client_sock = accept(server_sock, (struct sockaddr *) ptr_server_client_addr, &received_msg_size)) == -1) {
             perror("Error server accept");
+            exit(EXIT_FAILURE);
         }
 
+        printf("Receiving of new request...\n");
         if ((receiv_msg_size = read(server_client_sock, msg, READ_MAX - 1)) < 0) {
             perror("server read error");
+            //exit(EXIT_FAILURE);
+        }
+        else{
+            printf("New request: %s\n", msg);
+            printf("Parsing...\n");
+            ptr_bbrqst = parsing(msg, receiv_msg_size);
+
+            if(ptr_bbrqst != NULL){
+                printf("Parsing OK\n");
+                print_bbrequest(ptr_bbrqst);
+                //process_bb_request(ptr_bbrqst);
+                free(ptr_bbrqst);
+            }else{
+                printf("Error when parsing of the request\n");
+            }
         }
 
-        ptr_bbrqst = parsing(msg, receiv_msg_size);
-        if(ptr_bbrqst != NULL){
-            process_bb_request(ptr_bbrqst);
-            free(ptr_bbrqst);
-        }
-
-        
     }
 
     /*pthread_t tid;
@@ -364,4 +426,18 @@ int main(int argc, char **argv) {
 
     pthread_exit(NULL); */
 
+}
+
+
+
+char* concat(const char* str1, const char* str2){
+    if(concat_buf != str1)
+        strncpy(concat_buf, str1, CONCAT_BUF_SIZE);
+
+    strncat(concat_buf, str2, CONCAT_BUF_SIZE-strlen(concat_buf)-2);
+    return concat_buf;
+}
+
+char* concat3(const char* str1, const char* str2, const char* str3){
+    return concat(concat(str1, str2), str3);
 }
