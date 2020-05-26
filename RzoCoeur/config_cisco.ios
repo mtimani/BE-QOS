@@ -71,22 +71,31 @@ priority percent 30
 class MPLS-DT
 bandwith percent 40
 class MPLS-BK
+random-detect prec-based
+random-detect ecn 
 bandwith percent 5
 class class-default
 bandwith percent 25 
+random-detect prec-based
+random-detect ecn
 
 interface fastEthernet 0/0
 max-reserved-bandwith 100
 service-policy output MPLS-PHB
 
 #Policer
+class-map match-all TR-IP
+match ip dscp ef
+class-map match-all DT-IP
+match ip dscp af21
+
 policy-map Police-Client
-class TR
+class TR-IP
 police cir 300000
 conform-action transmit
 exceed-action drop
 violate-action drop
-class DT
+class DT-IP
 police cir 400000
 conform-action transmit
 exceed-action set-dscp-transmit cs1
@@ -177,9 +186,13 @@ priority percent 30
 class MPLS-DT
 bandwith percent 40
 class MPLS-BK
+random-detect prec-based
+random-detect ecn 
 bandwith percent 5
 class class-default
 bandwith percent 25 
+random-detect prec-based
+random-detect ecn
 
 interface fastEthernet 0/0
 max-reserved-bandwith 100
@@ -234,9 +247,13 @@ priority percent 30
 class MPLS-DT
 bandwith percent 40
 class MPLS-BK
+random-detect prec-based
+random-detect ecn 
 bandwith percent 5
 class class-default
 bandwith percent 25 
+random-detect prec-based
+random-detect ecn
 
 interface fastEthernet 0/0
 max-reserved-bandwith 100
@@ -318,29 +335,38 @@ priority percent 30
 class MPLS-DT
 bandwith percent 40
 class MPLS-BK
+random-detect prec-based
+random-detect ecn 
 bandwith percent 5
 class class-default
 bandwith percent 25 
+random-detect prec-based
+random-detect ecn
 
 interface fastEthernet 0/0
 max-reserved-bandwith 100
 service-policy output MPLS-PHB
 
 #Policer
+class-map match-all TR-IP
+match ip dscp ef
+class-map match-all DT-IP
+match ip dscp af21
+
 policy-map Police-Client
-class TR
+class TR-IP
 police cir 300000
 conform-action transmit
 exceed-action drop
 violate-action drop
-class DT
+class DT-IP
 police cir 400000
 conform-action transmit
 exceed-action set-dscp-transmit cs1
 violate-action drop
 
 interface fastEthernet 0/1 
-service-policy input Police-Client
+service-policy input Police-Clientsp
 
 #Uniform Tunneling Mode
 policy-map Set-QoS-Group
@@ -456,9 +482,13 @@ priority percent 30
 class MPLS-DT
 bandwith percent 40
 class MPLS-BK
+random-detect prec-based
+random-detect ecn 
 bandwith percent 5
 class class-default
 bandwith percent 25 
+random-detect prec-based
+random-detect ecn
 
 interface fastEthernet 0/1
 max-reserved-bandwith 100
