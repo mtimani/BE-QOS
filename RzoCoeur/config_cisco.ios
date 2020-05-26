@@ -51,7 +51,7 @@ neighbor 5.5.5.5 activate
 neighbor 5.5.5.5 send-community both
 
 ip classless
-ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 global
+ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 
 
 ##QOS
 
@@ -76,7 +76,24 @@ class class-default
 bandwith percent 25 
 
 interface fastEthernet 0/0
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
+
+#Policer
+policy-map Police-Client
+class TR
+police cir 300000
+conform-action transmit
+exceed-action drop
+violate-action drop
+class DT
+police cir 400000
+conform-action transmit
+exceed-action set-dscp-transmit cs1
+violate-action drop
+
+interface fastEthernet 0/1 
+service-policy input Police-Clients
 
 #Uniform Tunneling Mode
 policy-map Set-QoS-Group
@@ -165,8 +182,10 @@ class class-default
 bandwith percent 25 
 
 interface fastEthernet 0/0
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
 interface fastEthernet 0/1
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
 
 
@@ -220,8 +239,10 @@ class class-default
 bandwith percent 25 
 
 interface fastEthernet 0/0
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
 interface fastEthernet 0/1
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
 
 
@@ -278,7 +299,7 @@ neighbor 5.5.5.5 activate
 neighbor 5.5.5.5 send-community both
 
 ip classless
-ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 global
+ip route vrf CA 0.0.0.0 0.0.0.0 192.168.122.172 
 
 ##QOS
 
@@ -302,7 +323,24 @@ class class-default
 bandwith percent 25 
 
 interface fastEthernet 0/0
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
+
+#Policer
+policy-map Police-Client
+class TR
+police cir 300000
+conform-action transmit
+exceed-action drop
+violate-action drop
+class DT
+police cir 400000
+conform-action transmit
+exceed-action set-dscp-transmit cs1
+violate-action drop
+
+interface fastEthernet 0/1 
+service-policy input Police-Client
 
 #Uniform Tunneling Mode
 policy-map Set-QoS-Group
@@ -423,10 +461,5 @@ class class-default
 bandwith percent 25 
 
 interface fastEthernet 0/1
+max-reserved-bandwith 100
 service-policy output MPLS-PHB
-
-
-Problems : 
-- No default route on VRF PE side
-- No bandwith for class-default in PHB
-- No policer
